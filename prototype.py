@@ -11,24 +11,24 @@ FRAME_TIME = 30
 BULLET_SPEED = 25
 
 def check_collision(object1, object2):
-    if object1.x > object2.x-object2.hitbox_width//2 and object1.x < object2.x+object2.hitbox_width//2 and object1.y > object2.y-object2.hitbox_height//2 and object1.y < object2.y+object2.hitbox_height//2:
+    if object1.x > object2.x-object2.hitbox_width//2 and object1.x < object2.x+object2.hitbox_width//2 and object1.y > object2.y-object2.hitbox_height and object1.y < object2.y:
         return True
     return False
 
 class Player:
     def __init__(self, canvas):
         self.x = WIDTH//2
-        self.y = 300
+        self.y = 4*HEIGHT//5 - 20
         self.dimensions = 15
         self.current_image = tk.PhotoImage(file="Images/player_right.png")
         self.canvas = canvas
-        self.image = self.canvas.create_image(self.x, self.y, image=self.current_image)
+        self.image = self.canvas.create_image(self.x, self.y, image=self.current_image, anchor="s")
         self.direction = None
         self.velx = 0
 
         self.speed = 8
 
-        self.health = 1
+        self.health = 100
         self.healthbar_value = tk.IntVar()
         style = ttk.Style()
         style.theme_use('clam') 
@@ -89,7 +89,7 @@ class Player:
         else:
             self.current_image = tk.PhotoImage(file="Images/player_left.png")
 
-        self.canvas.create_image(self.x, self.y, image=self.current_image)
+        self.canvas.create_image(self.x, self.y, image=self.current_image, anchor="s")
 
         self.gun.update_gun(self, pointerx, pointery)
 
@@ -119,7 +119,7 @@ class GameManager:
         self.current_fade = 0
         self.bunker_count += 1
         self.score += 100
-        self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 300, self.canvas))
+        self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 4*HEIGHT//5, self.canvas))
 
     def on_key_pressed(self, event):
         self.player.key_pressed(event)
@@ -139,7 +139,7 @@ class GameManager:
 
     def call_each_frame(self):
         self.canvas.delete("all")
-        self.canvas.create_rectangle(0, 100, WIDTH, HEIGHT-100, fill="#497325")
+        self.canvas.create_rectangle(0, HEIGHT//5, WIDTH, 4*HEIGHT//5, fill="#497325")
         player_movement = -self.player. get_player_movement()
         edge_status = self.current_bunker.check_at_edge(WIDTH)
         if edge_status == "right" and player_movement < 0:
@@ -158,7 +158,7 @@ class GameManager:
             else:
                 for enemy in reversed(self.enemies):                    
                     if check_collision(bullet, enemy):
-                        self.effects.append(effects.DamagePopUp(enemy.x, enemy.y-enemy.hitbox_height//2, str(bullet.damage), self.DAMAGE_FONT, self.canvas))
+                        self.effects.append(effects.DamagePopUp(enemy.x, enemy.y-enemy.hitbox_height, str(bullet.damage), self.DAMAGE_FONT, self.canvas))
 
                         if enemy.take_damage(bullet.damage) == -1:
                             self.enemies.remove(enemy)
@@ -166,7 +166,7 @@ class GameManager:
                             self.current_bunker.enemy_killed()
                             self.score += 10
                             if not self.current_bunker.check_bunker_completed():
-                                self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 300, self.canvas))
+                                self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 4*HEIGHT//5, self.canvas))
 
                         self.bullets.remove(bullet)
                         del bullet
@@ -220,7 +220,7 @@ class GameManager:
         self.bunker_count = 0
         self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
         self.bullets = []
-        self.enemies = [Enemies.RatEnemy(WIDTH+300, 300, self.canvas)]
+        self.enemies = [Enemies.RatEnemy(WIDTH+300, 4*HEIGHT//5, self.canvas)]
         self.effects = []
 
         self.score = 0

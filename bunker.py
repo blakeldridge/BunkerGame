@@ -23,7 +23,7 @@ class Bunker:
         self.bunker_complete = False
 
         self.bunker_width = random.randint(1, 4)
-        self.foreground_dimensions = [500, 300]
+        self.foreground_dimensions = [500, sheight*3//5]
         self.background_dimensions = [1000, 300]
 
         self.foreground_image = self.generate_foreground_image("Images/foreground.png")

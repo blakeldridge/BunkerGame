@@ -4,7 +4,7 @@ import random
 class RatEnemy:
     def __init__(self, x, y, canvas):
         self.x = x
-        self.y = y + 20
+        self.y = y - 20
         self.hitbox_width = 50
         self.hitbox_height = 110
         self.canvas = canvas
@@ -54,4 +54,4 @@ class RatEnemy:
 
         self.x += self.velx + player_movement
         self.attack(player)
-        self.canvas.create_image(self.x, self.y, image=self.image)
+        self.canvas.create_image(self.x, self.y, image=self.image, anchor="s")

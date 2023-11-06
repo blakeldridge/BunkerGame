@@ -36,7 +36,7 @@ class Gun:
     def __init__(self, x, y, canvas):
         self.x = x
         self.y = y
-        self.y_offset = 15
+        self.y_offset = 90
         self.canvas = canvas
         self.gun_image_dirs = {"gun_right":"Images/gun_right.png", "gun_left":"Images/gun_left.png"}
         self.current_image = self.gun_image_dirs["gun_right"]
