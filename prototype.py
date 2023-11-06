@@ -6,7 +6,7 @@ import Enemies, effects, bunker, weapons
 import math
 import random
 
-WIDTH, HEIGHT = 750, 500
+WIDTH, HEIGHT = 960, 540
 FRAME_TIME = 30
 BULLET_SPEED = 25
 
@@ -96,11 +96,10 @@ class Player:
 class GameManager:
     def __init__(self):
         self.window = tk.Tk()
-        self.window.title("Bunker Game")
+        self.window.title("Nuclear Whiskers")
         self.window.geometry(f"{WIDTH}x{HEIGHT}")
-        self.canvas = tk.Canvas(width=WIDTH, height=HEIGHT, background="black")
 
-        self.player = Player(self.canvas)
+        self.state = "main"
 
         self.DAMAGE_FONT = Font(
             family="Courier",
@@ -108,22 +107,12 @@ class GameManager:
             weight="bold"
         )
 
-        self.bunker_count = 0
-        self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
-
         self.fading_animation_active = False
         self.current_fade = 0
         self.fades = ["gray12", "gray25", "gray50", "gray75", "gray100", "gray100", "gray75", "gray50", "gray25", "gray12"]
         self.fading_frames = 5
 
-        self.bullets = []
-        self.enemies = [Enemies.RatEnemy(WIDTH+300, 300, self.canvas)]
-        self.effects = []
-
-        self.score = 0
-
         self.game_over = False
-        self.game_over_frame = tk.Frame(background="black")
     
     def reset_bunker(self):
         self.fading_animation_active = False
@@ -214,14 +203,16 @@ class GameManager:
         self.player.gun.display_ammo(WIDTH, HEIGHT)
         self.canvas.create_text(WIDTH//2, 25, text=f"Score: {self.score}", justify="center", font=("Courier", 15, "bold"), fill="white")
         if self.player.check_dead():
-            self.game_over_screen()
+            self.canvas.destroy()
+            self.state = "game_over"
+            self.current_frame = self.get_game_over_frame()
+            self.current_frame.pack()
 
-        if not self.game_over:
+        if self.state == "game":
             self.window.after(FRAME_TIME, self.call_each_frame)
 
-    def start_game(self):
-        self.game_over = False
-        self.game_over_frame.destroy()
+    def setup_game_loop(self):
+        self.current_frame.destroy()
         self.canvas = tk.Canvas(width=WIDTH, height=HEIGHT, background="black")
 
         self.player = Player(self.canvas)
@@ -241,45 +232,88 @@ class GameManager:
 
         self.call_each_frame()
 
-        self.window.mainloop()
+    def resize_image(self, image_dir, width, height):
+        image = Image.open(image_dir)
+        return ImageTk.PhotoImage(image.resize((width, height), Image.NEAREST))
 
-    def handle_menu_options(self, option):
-        if option == "Play":
-            self.start_game()
+    def handle_menu_options(self, event):
+        # menu options = "Play","Load","Leaderboard","Options","Exit"
+        # game over options = "Play Again", "Main Menu"
+        option = event.widget["text"]
+        if option == "Play" or option == "Play Again":
+            self.state = "game"
+            self.setup_game_loop()
         elif option == "Load":
             # load a previous game
+            pass
+        elif option == "Leaderboard":
+            # loads leaderboard
             pass
         elif option == "Options":
             # load options menu
             pass
-        else:
-            # exit the game
-            pass
+        elif option == "Exit":
+            self.window.destroy()
+        elif option == "Main Menu":
+            self.current_frame.destroy()
+            self.current_frame = self.get_main_menu_frame()
+            self.current_frame.pack()
 
-    def main_menu_screen(self):
-        self.canvas.config(background="black")
-        self.canvas.create_image(0, 0, image="Images/main_menu_drawing.png")
-        self.canvas.create_image(WIDTH//2, 0, image="Images/game_title.png")
-        for index, text in enumerate(["Play","Load","Options","Exit"]):
-            original_y = HEIGHT//3
-            menu_btn = tk.Button(text=text, command=lambda x=text: self.handle_menu_options(text))
-            menu_btn.place(x=2*WIDTH//3, y=original_y + 50*index)
+    def on_enter(self, event):
+        event.widget.config(fg="yellow", font=("Courier", 25, "bold"))
 
-    def game_over_screen(self):
-        self.game_over = True
-        self.canvas.delete("all")
-        self.canvas.destroy()
-        self.game_over_frame = tk.Frame(width=WIDTH, height=HEIGHT)
-        
-        game_over_label = tk.Label(master=self.game_over_frame, text="Game Over")
-        game_over_label.pack()
-        score_label = tk.Label(master=self.game_over_frame, text=f"Final Score: {self.score}")
-        score_label.pack()
-        restart_button = tk.Button(master=self.game_over_frame, text="Restart", command=self.start_game)
-        restart_button.pack()
-        return_to_menu_button = tk.Button(master=self.game_over_frame, text="Main Menu")
-        return_to_menu_button.pack()
-        self.game_over_frame.pack()
+    def on_leave(self, event):
+        event.widget.config(fg="white", font=("Courier", 20, "bold"))
+
+    def get_main_menu_frame(self):
+        main_menu_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
+
+        self.main_menu_image = self.resize_image("Images/main_menu_image.png", WIDTH//2, HEIGHT)
+        for index, text in enumerate(["Play","Load","Leaderboard","Options","Exit"]):
+            original_y = 3*HEIGHT//7
+            menu_btn = tk.Label(master=main_menu_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
+            menu_btn.bind("<Button-1>", self.handle_menu_options)
+            menu_btn.bind("<Enter>", self.on_enter)
+            menu_btn.bind("<Leave>", self.on_leave)
+            menu_btn.place(x=3*WIDTH//4, y=original_y + 50*index, anchor="center")
+
+        title_label = tk.Label(master=main_menu_frame, text="Nuclear\nWhiskers", fg="white", background="black", font=("Courier", 40, "bold"))
+        title_label.place(x=3*WIDTH//4, y=HEIGHT//5, anchor="center")
+
+        main_menu_image_label = tk.Label(master=main_menu_frame, image=self.main_menu_image, background="black")
+        main_menu_image_label.place(x=0, y=0)
+
+        return main_menu_frame
+
+    def get_game_over_frame(self):
+        game_over_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
+
+        game_over_image = self.resize_image("Images/main_menu_image.png", WIDTH//2, HEIGHT)
+        for index, text in enumerate(["Play Again", "Main Menu"]):
+            original_y = 5*HEIGHT//7
+            menu_btn = tk.Label(master=game_over_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
+            menu_btn.bind("<Button-1>", self.handle_menu_options)
+            menu_btn.bind("<Enter>", self.on_enter)
+            menu_btn.bind("<Leave>", self.on_leave)
+            menu_btn.place(x=3*WIDTH//4, y=original_y + 50*index, anchor="center")
+
+        title_label = tk.Label(master=game_over_frame, text="Game Over", fg="white", background="black", font=("Courier", 40, "bold"))
+        title_label.place(x=3*WIDTH//4, y=HEIGHT//5, anchor="center")
+
+        score_label = tk.Label(master=game_over_frame, text=f"Final Score: {self.score}", fg="white", background="black", font=("Courier", 20, "bold"))
+        score_label.place(x=3*WIDTH//4, y=3*HEIGHT//7, anchor="center")
+
+        game_over_image_label = tk.Label(master=game_over_frame, image=self.main_menu_image, background="black")
+        game_over_image_label.place(x=0, y=0)
+
+        return game_over_frame
+
+    def start_game(self):
+        self.current_frame = self.get_main_menu_frame()
+        self.current_frame.pack()
+
+        self.window.mainloop()
+
 
 game = GameManager()
 game.start_game()
