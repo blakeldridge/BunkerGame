@@ -109,7 +109,7 @@ class GameManager:
 
         self.fading_animation_active = False
         self.current_fade = 0
-        self.fades = ["gray12", "gray25", "gray50", "gray75", "gray100", "gray100", "gray75", "gray50", "gray25", "gray12"]
+        self.fades = ["gray12", "gray25", "gray50", "gray75", "gray100", "gray100peak", "gray75", "gray50", "gray25", "gray12"]
         self.fading_frames = 5
 
         self.game_over = False
@@ -117,7 +117,6 @@ class GameManager:
     def reset_bunker(self):
         self.fading_animation_active = False
         self.current_fade = 0
-        self.bunker_count += 1
         self.score += 100
         self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 4*HEIGHT//5, self.canvas))
 
@@ -193,14 +192,20 @@ class GameManager:
             else:
                 self.reset_bunker()
 
-            if self.fades[self.current_fade//self.fading_frames] == "gray100":
-                self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
+            if self.fades[self.current_fade//self.fading_frames] == "gray100peak":
+                if self.current_fade%self.fading_frames == 1:
+                    self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
+                    self.bunker_count += 1
+                    self.effects.append(effects.BunkerLevelText(self.bunker_count, WIDTH, HEIGHT, self.canvas))
+                self.canvas.create_rectangle(0, 0, WIDTH, HEIGHT, fill="black")
+            elif self.fades[self.current_fade//self.fading_frames] == "gray100":
                 self.canvas.create_rectangle(0, 0, WIDTH, HEIGHT, fill="black")
             else:
                 self.canvas.create_rectangle(0, 0, WIDTH, HEIGHT, fill="black", stipple=self.fades[self.current_fade//self.fading_frames])
 
         self.player.update_healthbar()
         self.player.gun.display_ammo(WIDTH, HEIGHT)
+        self.canvas.create_text(100, HEIGHT-30, text=f"Level {self.bunker_count}", justify="center", fill="white", font=("Courier", 20, "bold"))
         self.canvas.create_text(WIDTH//2, 25, text=f"Score: {self.score}", justify="center", font=("Courier", 15, "bold"), fill="white")
         if self.player.check_dead():
             self.canvas.destroy()
@@ -217,7 +222,7 @@ class GameManager:
 
         self.player = Player(self.canvas)
 
-        self.bunker_count = 0
+        self.bunker_count = 1
         self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
         self.bullets = []
         self.enemies = [Enemies.RatEnemy(WIDTH+300, 4*HEIGHT//5, self.canvas)]

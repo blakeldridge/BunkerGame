@@ -18,7 +18,7 @@ class Bunker:
     def __init__(self, canvas, sheight):
         self.sheight = sheight
         self.canvas = canvas
-        self.total_enemies = 1 #random.randint(5,10)
+        self.total_enemies = random.randint(1, 3)
         self.enemy_count = 0
         self.bunker_complete = False
 
@@ -47,10 +47,6 @@ class Bunker:
         return ImageTk.PhotoImage(resized_image)
 
     def create_foreground(self):
-        """foreground = [Foreground(self.foreground_dimensions[0]*i, (self.sheight-self.foreground_dimensions[1])//2, self.foreground_image) for i in range(self.bunker_width*2)]
-        foreground.insert(0, Foreground(-self.foreground_dimensions[0], (self.sheight-self.foreground_dimensions[1])//2, self.foreground_edge_left))
-        foreground.append(Foreground(self.foreground_dimensions[0]*self.bunker_width, (self.sheight-self.foreground_dimensions[1])//2, self.foreground_edge_right))
-        """
         foreground = [Foreground(self.foreground_dimensions[0]*i, self.sheight//2, self.foreground_image) for i in range(self.bunker_width*2)]
         foreground.insert(0, Foreground(-self.foreground_dimensions[0], self.sheight//2, self.foreground_edge_left))
         foreground.append(Foreground(self.foreground_dimensions[0]*self.bunker_width, self.sheight//2, self.foreground_edge_right))
