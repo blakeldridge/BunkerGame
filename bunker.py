@@ -15,10 +15,11 @@ class Foreground:
         canvas.create_image(self.x, self.y, image=self.image)
 
 class Bunker:
-    def __init__(self, canvas, sheight):
+    def __init__(self, bunker_number, canvas, sheight, is_crazy_bunker=False):
         self.sheight = sheight
         self.canvas = canvas
-        self.total_enemies = random.randint(1, 3)
+        lower, upper = self.calculate_enemy_range(bunker_number, is_crazy_bunker)
+        self.total_enemies = random.randint(lower, upper)
         self.enemy_count = 0
         self.bunker_complete = False
 
@@ -33,11 +34,26 @@ class Bunker:
 
         self.begin_bunker()
 
-    def enemy_killed(self):
+    def calculate_enemy_range(self, bunker_number, is_crazy_bunker):
+        lower_range = 5 + bunker_number
+        if random.random() > 0.5:
+            upper_range = 10 + bunker_number*2
+        else:
+            upper_range = 10 + bunker_number
+
+        if is_crazy_bunker:
+            return 2*lower_range, 2*upper_range
+        else:
+            return lower_range, upper_range
+
+    def get_remaining_enemies(self):
+        return self.total_enemies - self.enemy_count
+
+    def enemy_spawned(self):
         self.enemy_count += 1
 
-    def check_bunker_completed(self):
-        if self.enemy_count >= self.total_enemies:
+    def check_bunker_completed(self, enemies):
+        if self.enemy_count >= self.total_enemies and len(enemies) == 0:
             return True
         return False
 

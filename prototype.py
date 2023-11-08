@@ -2,7 +2,9 @@ import tkinter as tk
 from tkinter.font import Font
 from tkinter import ttk
 from PIL import ImageTk, Image
-import Enemies, effects, bunker, weapons
+from datetime import datetime
+from spawner import Spawner
+import effects, bunker, weapons
 import math
 import random
 
@@ -28,7 +30,7 @@ class Player:
 
         self.speed = 8
 
-        self.health = 100
+        self.health = 1
         self.healthbar_value = tk.IntVar()
         style = ttk.Style()
         style.theme_use('clam') 
@@ -113,16 +115,18 @@ class GameManager:
         self.fading_frames = 5
 
         self.game_over = False
+
+        self.is_crazy_bunker = False
     
     def reset_bunker(self):
         self.fading_animation_active = False
         self.current_fade = 0
         self.score += 100
-        self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 4*HEIGHT//5, self.canvas))
-
+        self.spawner.bunker_reset(self.is_crazy_bunker)
+        
     def on_key_pressed(self, event):
         self.player.key_pressed(event)
-        if event.char == "e" and self.current_bunker.check_bunker_completed() and not self.fading_animation_active:
+        if event.char == "e" and self.current_bunker.check_bunker_completed(self.enemies) and not self.fading_animation_active:
             self.fading_animation_active = True
 
     def on_key_released(self, event):
@@ -132,6 +136,12 @@ class GameManager:
         if self.player.gun.check_ammo():
             bullet_x, bullet_y, bullet_vel_x, bullet_vel_y = self.player.get_bullet_args()
             self.bullets.append(weapons.Bullet(bullet_x, bullet_y, bullet_vel_x, bullet_vel_y, self.canvas, WIDTH, HEIGHT))
+
+    def on_escape_key_pressed(self, event):
+        self.state = "pause"
+        self.canvas.pack_forget()
+        self.current_frame = self.get_pause_frame()
+        self.current_frame.pack()
 
     def display_bunker_completed(self):
         self.canvas.create_text(WIDTH//2, HEIGHT//2, text="Bunker Completed\nE descend", justify="center", fill="white", font=("Courier", 25, "bold"))
@@ -149,6 +159,11 @@ class GameManager:
         self.current_bunker.camera_move_foreground(player_movement)
         pointerx = self.window.winfo_pointerx() - self.window.winfo_rootx()
         pointery = self.window.winfo_pointery() - self.window.winfo_rooty()
+
+        enemy = self.spawner.spawn(self.current_bunker.get_remaining_enemies(), self.bunker_count, WIDTH, HEIGHT, self.canvas)
+        if enemy is not None:
+            self.enemies.append(enemy)
+            self.current_bunker.enemy_spawned()
         
         for bullet in reversed(self.bullets):
             if bullet.update_bullet(player_movement) == -1:
@@ -162,10 +177,7 @@ class GameManager:
                         if enemy.take_damage(bullet.damage) == -1:
                             self.enemies.remove(enemy)
                             del enemy
-                            self.current_bunker.enemy_killed()
                             self.score += 10
-                            if not self.current_bunker.check_bunker_completed():
-                                self.enemies.append(Enemies.RatEnemy(random.choice([WIDTH+200, -200]), 4*HEIGHT//5, self.canvas))
 
                         self.bullets.remove(bullet)
                         del bullet
@@ -183,7 +195,7 @@ class GameManager:
                 self.effects.remove(effect)
                 del effect            
 
-        if self.current_bunker.check_bunker_completed():
+        if self.current_bunker.check_bunker_completed(self.enemies):
             self.display_bunker_completed()
 
         if self.fading_animation_active:
@@ -194,8 +206,9 @@ class GameManager:
 
             if self.fades[self.current_fade//self.fading_frames] == "gray100peak":
                 if self.current_fade%self.fading_frames == 1:
-                    self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
+                    self.is_crazy_bunker = random.random() < 0.05
                     self.bunker_count += 1
+                    self.current_bunker = bunker.Bunker(self.bunker_count, self.canvas, HEIGHT, self.is_crazy_bunker)
                     self.effects.append(effects.BunkerLevelText(self.bunker_count, WIDTH, HEIGHT, self.canvas))
                 self.canvas.create_rectangle(0, 0, WIDTH, HEIGHT, fill="black")
             elif self.fades[self.current_fade//self.fading_frames] == "gray100":
@@ -221,21 +234,28 @@ class GameManager:
         self.canvas = tk.Canvas(width=WIDTH, height=HEIGHT, background="black")
 
         self.player = Player(self.canvas)
+        self.spawner = Spawner()
 
         self.bunker_count = 1
-        self.current_bunker = bunker.Bunker(self.canvas, HEIGHT)
+        self.current_bunker = bunker.Bunker(self.bunker_count, self.canvas, HEIGHT)
         self.bullets = []
-        self.enemies = [Enemies.RatEnemy(WIDTH+300, 4*HEIGHT//5, self.canvas)]
-        self.effects = []
+        self.enemies = []
+        self.effects = [effects.BunkerLevelText(self.bunker_count, WIDTH, HEIGHT, self.canvas)]
 
         self.score = 0
         self.canvas.bind("<KeyPress>", self.on_key_pressed)
         self.canvas.bind("<KeyRelease>", self.on_key_released)
         self.canvas.bind("<ButtonPress-1>", self.on_mouse_pressed)
+        self.canvas.bind("<Escape>", self.on_escape_key_pressed)
         self.canvas.focus_set()
         self.canvas.pack()
 
         self.call_each_frame()
+
+    def save_score(self, player_name):
+        with open("leaderboard.txt","a") as leaderboard:
+            leaderboard.write(f"{player_name},{self.score},{datetime.now().strftime("%d/%m/%Y")}\n")
+            leaderboard.close()
 
     def resize_image(self, image_dir, width, height):
         image = Image.open(image_dir)
@@ -252,8 +272,9 @@ class GameManager:
             # load a previous game
             pass
         elif option == "Leaderboard":
-            # loads leaderboard
-            pass
+            self.current_frame.destroy()
+            self.current_frame = self.get_leaderboard_frame()
+            self.current_frame.pack()
         elif option == "Options":
             # load options menu
             pass
@@ -263,6 +284,13 @@ class GameManager:
             self.current_frame.destroy()
             self.current_frame = self.get_main_menu_frame()
             self.current_frame.pack()
+        elif option == "Resume":
+            self.current_frame.destroy()
+            self.canvas.pack()
+            self.state = "game"
+            self.call_each_frame()
+        elif option == "Save and Exit":
+            pass
 
     def on_enter(self, event):
         event.widget.config(fg="yellow", font=("Courier", 25, "bold"))
@@ -291,6 +319,14 @@ class GameManager:
         return main_menu_frame
 
     def get_game_over_frame(self):
+
+        def entered_name(event):
+            widget = event.widget
+            name = widget.get()
+            self.save_score(name)
+            widget.destroy()
+            saved_score_label.place(x=3*WIDTH//4, y=4*HEIGHT//7, anchor="center")
+
         game_over_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
 
         game_over_image = self.resize_image("Images/main_menu_image.png", WIDTH//2, HEIGHT)
@@ -311,7 +347,65 @@ class GameManager:
         game_over_image_label = tk.Label(master=game_over_frame, image=self.main_menu_image, background="black")
         game_over_image_label.place(x=0, y=0)
 
+        save_score_entry = tk.Entry(master=game_over_frame, font=("Courier", 18, "bold"))
+        save_score_entry.bind("<Return>", entered_name)
+        save_score_entry.place(x=3*WIDTH//4, y=4*HEIGHT//7, anchor="center")
+
+        saved_score_label = tk.Label(master=game_over_frame, text="Score Saved!", font=("Courier", 18, "bold"), fg="yellow", background="black")
+
+
         return game_over_frame
+    
+    def get_pause_frame(self):
+        pause_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
+        for index, text in enumerate(["Resume", "Options", "Save and Exit", "Main Menu"]):
+            original_y = 2*HEIGHT//5
+            menu_btn = tk.Label(master=pause_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
+            menu_btn.bind("<Button-1>", self.handle_menu_options)
+            menu_btn.bind("<Enter>", self.on_enter)
+            menu_btn.bind("<Leave>", self.on_leave)
+            menu_btn.place(x=WIDTH//2, y=original_y + 50*index, anchor="center")
+        
+        pause_title_label = tk.Label(master=pause_frame, text="Paused", fg="white", background="black", font=("Courier", 40, "bold"))
+        pause_title_label.place(x=WIDTH//2, y=HEIGHT//5, anchor="center")
+
+        return pause_frame
+    
+    def get_leaderboard_frame(self):
+        leaderboard_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
+        leaderboard_title = tk.Label(master=leaderboard_frame, text="Leaderboard", fg="white", background="black", font=("Courier", 40, "bold"))
+        leaderboard_title.place(x=3*WIDTH//4, y=HEIGHT//10, anchor="center")
+        menu_btn = tk.Label(master=leaderboard_frame, text="Main Menu", fg="white", font=("Courier", 20, "bold"), background="black") 
+        menu_btn.bind("<Button-1>", self.handle_menu_options)
+        menu_btn.bind("<Enter>", self.on_enter)
+        menu_btn.bind("<Leave>", self.on_leave)
+        menu_btn.place(x=3*WIDTH//4, y=HEIGHT-100, anchor="center")
+
+        with open("leaderboard.txt","r") as leaderboard:
+            scores = leaderboard.readlines()
+            scores = list(map(lambda x: x.rstrip().split(","), scores))
+            scores.sort(reverse=True, key=lambda x: int(x[1]))
+            if len(scores) == 0:
+                empty_leaderboard_label = tk.Label(master=leaderboard_frame, text="There are no scores available!",  fg="white", background="black", font=("Courier", 15, "bold"))
+                empty_leaderboard_label.place(x=3*WIDTH//4, y=HEIGHT//5, anchor="center")
+            else:
+                original_y = 1.5*HEIGHT//5
+                for index, score in enumerate(scores[:5]):
+                    position_label = tk.Label(master=leaderboard_frame, text=f"{index+1}.", fg="yellow", font=("Courier", 15, "bold"), background="black")
+                    name_label = tk.Label(master=leaderboard_frame, text=score[0], fg="white", font=("Courier", 15, "bold"), background="black")
+                    score_label = tk.Label(master=leaderboard_frame, text=score[1], fg="white", font=("Courier", 15, "bold"), background="black")
+                    time_label = tk.Label(master=leaderboard_frame, text=score[2], fg="white", font=("Courier", 15, "bold"), background="black")
+                    position_label.place(x=2*WIDTH//4 + 50, y=original_y+index*50, anchor="center")
+                    name_label.place(x=3*WIDTH//4 - 100, y=original_y+index*50, anchor="center")
+                    score_label.place(x=3*WIDTH//4, y=original_y+index*50, anchor="center")
+                    time_label.place(x=3*WIDTH//4 + 100, y=original_y+index*50, anchor="center")
+
+            leaderboard.close()
+
+        game_over_image_label = tk.Label(master=leaderboard_frame, image=self.main_menu_image, background="black")
+        game_over_image_label.place(x=0, y=0)
+
+        return leaderboard_frame
 
     def start_game(self):
         self.current_frame = self.get_main_menu_frame()

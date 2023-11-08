@@ -35,7 +35,7 @@ class BunkerLevelText:
 		pass
 
 	def update_effect(self, player_movement=None):
-		self.text = self.canvas.create_text(self.x, self.y, text=f"Level {self.bunker_number}", font=("Courier", 20, "bold"), fill="white")
+		self.text = self.canvas.create_text(self.x, self.y, text=f"Level {self.bunker_number}", font=("Courier", 30, "bold"), fill="white")
 		self.time_lived += 1
 
 		if self.time_lived > self.time_to_live:
