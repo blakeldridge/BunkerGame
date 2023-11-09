@@ -13,6 +13,8 @@ WIDTH, HEIGHT = 960, 540
 FRAME_TIME = 30
 BULLET_SPEED = 25
 
+bindings = {"Move Right":"d", "Move Left":"a", "Interact":"e", "Reload":"r", "Boss Button":"o", "Cheats": "p"}
+
 def check_collision(object1, object2):
     if object1.x > object2.x-object2.hitbox_width//2 and object1.x < object2.x+object2.hitbox_width//2 and object1.y > object2.y-object2.hitbox_height and object1.y < object2.y:
         return True
@@ -49,23 +51,23 @@ class Player:
 
     def key_pressed(self, event):
         char = event.char
-        if char == "d":
+        if char == bindings["Move Right"]:
             self.direction = "right"
             self.velx = self.speed
-        elif char == "a":
+        elif char == bindings["Move Left"]:
             self.direction = "left"
             self.velx = -self.speed
 
-        elif char == "r":
+        elif char == bindings["Reload"]:
             self.gun.reload()
 
     def key_released(self, event):
         char = event.char
-        if char == "d" and self.direction == "right":
+        if char == bindings["Move Right"] and self.direction == "right":
             self.direction = None
             self.velx = 0
 
-        elif char == "a" and self.direction == "left":
+        elif char == bindings["Move Left"] and self.direction == "left":
             self.direction = None
             self.velx = 0
 
@@ -107,6 +109,7 @@ class GameManager:
         self.window = tk.Tk()
         self.window.title("Nuclear Whiskers")
         self.window.geometry(f"{WIDTH}x{HEIGHT}")
+        self.window.bind("<KeyPress>", self.activate_boss_button)
 
         self.state = "main"
 
@@ -124,6 +127,12 @@ class GameManager:
         self.game_over = False
 
         self.is_crazy_bunker = False
+
+    def activate_boss_button(self, event):
+        if event.char == bindings["Boss Button"]:
+            if self.state == "game":
+                self.on_escape_key_pressed(None)
+            self.window.iconify()
     
     def reset_bunker(self):
         self.fading_animation_active = False
@@ -133,7 +142,7 @@ class GameManager:
         
     def on_key_pressed(self, event):
         self.player.key_pressed(event)
-        if event.char == "e" and self.current_bunker.check_bunker_completed(self.enemies) and not self.fading_animation_active:
+        if event.char == bindings["Interact"] and self.current_bunker.check_bunker_completed(self.enemies) and not self.fading_animation_active:
             self.fading_animation_active = True
 
     def on_key_released(self, event):
@@ -274,8 +283,6 @@ class GameManager:
         return ImageTk.PhotoImage(image.resize((width, height), Image.NEAREST))
 
     def handle_menu_options(self, event):
-        # menu options = "Play","Load","Leaderboard","Options","Exit"
-        # game over options = "Play Again", "Main Menu"
         option = event.widget["text"]
         if option == "Play" or option == "Play Again":
             self.state = "game"
@@ -290,11 +297,12 @@ class GameManager:
             self.current_frame = self.get_leaderboard_frame()
             self.current_frame.pack()
         elif option == "Options":
-            # load options menu
-            pass
+            self.current_frame.destroy()
+            self.current_frame = self.get_options_frame()
+            self.current_frame.pack()
         elif option == "Exit":
             self.window.destroy()
-        elif option == "Main Menu":
+        elif option == "Main Menu" or option == "<--":
             self.current_frame.destroy()
             self.current_frame = self.get_main_menu_frame()
             self.current_frame.pack()
@@ -332,7 +340,10 @@ class GameManager:
         self.main_menu_image = self.resize_image("Images/main_menu_image.png", WIDTH//2, HEIGHT)
         for index, text in enumerate(["Play","Load","Leaderboard","Options","Exit"]):
             original_y = 3*HEIGHT//7
-            menu_btn = tk.Label(master=main_menu_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
+            if text == "Options":
+                menu_btn = tk.Label(master=main_menu_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black", name="main_menu_options") 
+            else:
+                menu_btn = tk.Label(master=main_menu_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
             menu_btn.bind("<Button-1>", self.handle_menu_options)
             menu_btn.bind("<Enter>", self.on_enter)
             menu_btn.bind("<Leave>", self.on_leave)
@@ -387,7 +398,10 @@ class GameManager:
         pause_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
         for index, text in enumerate(["Resume", "Options", "Save and Exit", "Main Menu"]):
             original_y = 2*HEIGHT//5
-            menu_btn = tk.Label(master=pause_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
+            if text == "Options":
+                menu_btn = tk.Label(master=pause_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black", name="pause_menu_options") 
+            else:
+                menu_btn = tk.Label(master=pause_frame, text=text, fg="white", font=("Courier", 20, "bold"), background="black") 
             menu_btn.bind("<Button-1>", self.handle_menu_options)
             menu_btn.bind("<Enter>", self.on_enter)
             menu_btn.bind("<Leave>", self.on_leave)
@@ -472,6 +486,58 @@ class GameManager:
         load_label.place(x=0, y=0)
 
         return load_frame
+    
+    def get_options_frame(self):
+        options_background_colour = "#777777"
+        options_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
+        options_title = tk.Label(master=options_frame, text="Options", fg="white", background="black", font=("Courier", 30, "bold"))
+        options_title.place(x=WIDTH//2, y=50, anchor="center")
+
+        controls_frame = tk.Frame(master=options_frame, width=WIDTH-50, height=HEIGHT-150, background=options_background_colour)
+        control_names = list(bindings.keys())
+        control_bindings = list(bindings.values())
+        for i in range(len(bindings)):
+            if i > 3:
+                row = i - 4
+                label_column = 2
+                binding_column = 3
+            else:
+                row = i
+                label_column = 0
+                binding_column = 1
+            control_name_label = tk.Label(master=controls_frame, text=f"{control_names[i]}:", fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
+            control_label = tk.Label(master=controls_frame, text=control_bindings[i].upper(), fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
+            control_name_label.grid(row=row, column=label_column, padx=30, pady=25, sticky="W")
+            control_label.grid(row=row, column=binding_column,padx=30, pady=25)
+
+        # to be sound part of options menu (requires external module)
+        """sounds_frame = tk.Frame(master=options_frame, width=WIDTH//2, height=HEIGHT, background=options_background_colour)
+        music_label = tk.Label(master=sounds_frame, text="Music:", fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
+        music_toggle_btn = tk.Button(master=sounds_frame, text="On")
+
+        sound_effects_label = tk.Label(master=sounds_frame, text="Sound Effects:", fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
+        sound_effects_toggle_btn = tk.Button(master=sounds_frame, text="On")
+
+        volume_label = tk.Label(master=sounds_frame, text="Volume:", fg="white", background=options_background_colour, font=("Courier",30,"bold"))
+        volume_slider = tk.Scale(master=sounds_frame, from_=0, to=100, orient=tk.HORIZONTAL)
+
+        music_label.grid(row=0, column=0, padx=20, pady=30, sticky="W")
+        music_toggle_btn.grid(row=0, column=1, padx=10, pady=30)
+        sound_effects_label.grid(row=1, column=0, padx=20, pady=30, sticky="W")
+        sound_effects_toggle_btn.grid(row=1, column=1, padx=20, pady=30)
+        volume_label.grid(row=2, column=0, padx=20, pady=30, sticky="W")
+        volume_slider.grid(row=3, column=0, padx=10, pady=30)"""
+
+        controls_frame.place(x=WIDTH//2, y=HEIGHT//2, anchor="center", rely=0.1)
+        # sounds_frame.grid(row=1, column=1, padx=25, pady=20)
+
+        return_btn = tk.Label(master=options_frame, text="<--", fg="white", background="black",font=("Courier",20,"bold"))
+        return_btn.bind("<Button-1>", self.handle_menu_options)
+        return_btn.bind("<Enter>", self.on_enter)
+        return_btn.bind("<Leave>", self.on_leave)
+        return_btn.place(x=50, y=50, anchor="center")
+
+        return options_frame
 
     def start_game(self):
         self.current_frame = self.get_main_menu_frame()
