@@ -7,6 +7,13 @@ class Spawner:
         self.normal_spawn_rate = self.spawn_rate
         self.spawn_tick = 0
 
+    def get_save_info(self):
+        return [self.normal_spawn_rate]
+    
+    def load_save_info(self, saved_info):
+        self.spawn_rate = saved_info[0]
+        self.normal_spawn_rate = saved_info[0]
+
     def bunker_reset(self, is_crazy_bunker):
         if is_crazy_bunker:
             self.normal_spawn_rate = self.spawn_rate

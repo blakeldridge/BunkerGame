@@ -7,6 +7,7 @@ from spawner import Spawner
 import effects, bunker, weapons
 import math
 import random
+import ast
 
 WIDTH, HEIGHT = 960, 540
 FRAME_TIME = 30
@@ -39,6 +40,12 @@ class Player:
         self.healthbar.place(x=WIDTH//2 - WIDTH//8, y=HEIGHT-30, width=WIDTH//4)
 
         self.gun = weapons.Gun(self.x, self.y, self.canvas)
+
+    def get_save_info(self):
+        return [self.health]
+    
+    def load_save_info(self, saved_info):
+        self.health = saved_info[0]
 
     def key_pressed(self, event):
         char = event.char
@@ -229,7 +236,7 @@ class GameManager:
         if self.state == "game":
             self.window.after(FRAME_TIME, self.call_each_frame)
 
-    def setup_game_loop(self):
+    def setup_game_loop(self, saved_game=None):
         self.current_frame.destroy()
         self.canvas = tk.Canvas(width=WIDTH, height=HEIGHT, background="black")
 
@@ -237,6 +244,11 @@ class GameManager:
         self.spawner = Spawner()
 
         self.bunker_count = 1
+        if saved_game != None:
+            self.load_saved_info(ast.literal_eval(saved_game[1]))
+            self.spawner.load_save_info(ast.literal_eval(saved_game[2]))
+            self.player.load_save_info(ast.literal_eval(saved_game[3]))
+
         self.current_bunker = bunker.Bunker(self.bunker_count, self.canvas, HEIGHT)
         self.bullets = []
         self.enemies = []
@@ -269,8 +281,10 @@ class GameManager:
             self.state = "game"
             self.setup_game_loop()
         elif option == "Load":
-            # load a previous game
-            pass
+            self.state = "Menu"
+            self.current_frame.destroy()
+            self.current_frame = self.get_load_frame()
+            self.current_frame.pack()
         elif option == "Leaderboard":
             self.current_frame.destroy()
             self.current_frame = self.get_leaderboard_frame()
@@ -290,13 +304,27 @@ class GameManager:
             self.state = "game"
             self.call_each_frame()
         elif option == "Save and Exit":
-            pass
+            with open("saved_games.txt","a") as saved_games:
+                saved_games.write(f"{self.bunker_count, datetime.now().strftime("%d/%m/%Y")};{self.get_save_info()};{self.spawner.get_save_info()};{self.player.get_save_info()}")
+                saved_games.close()
 
-    def on_enter(self, event):
-        event.widget.config(fg="yellow", font=("Courier", 25, "bold"))
+            self.state = "menu"
+            self.current_frame.destroy()
+            self.current_frame = self.get_main_menu_frame()
+            self.current_frame.pack()
 
-    def on_leave(self, event):
-        event.widget.config(fg="white", font=("Courier", 20, "bold"))
+    def get_save_info(self):
+        return [self.bunker_count, self.score]
+    
+    def load_saved_info(self, saved_info):
+        self.bunker_count = saved_info[0]
+        self.score = saved_info[1]
+
+    def on_enter(self, event, size=25):
+        event.widget.config(fg="yellow", font=("Courier", size, "bold"))
+
+    def on_leave(self, event, size=20):
+        event.widget.config(fg="white", font=("Courier", size, "bold"))
 
     def get_main_menu_frame(self):
         main_menu_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
@@ -353,7 +381,6 @@ class GameManager:
 
         saved_score_label = tk.Label(master=game_over_frame, text="Score Saved!", font=("Courier", 18, "bold"), fg="yellow", background="black")
 
-
         return game_over_frame
     
     def get_pause_frame(self):
@@ -402,17 +429,55 @@ class GameManager:
 
             leaderboard.close()
 
-        game_over_image_label = tk.Label(master=leaderboard_frame, image=self.main_menu_image, background="black")
-        game_over_image_label.place(x=0, y=0)
+        leaderboard_label = tk.Label(master=leaderboard_frame, image=self.main_menu_image, background="black")
+        leaderboard_label.place(x=0, y=0)
 
         return leaderboard_frame
+    
+    def get_load_frame(self):
+        def game_loaded(saved_game):
+            self.current_frame.destroy()
+            self.state = "game"
+            self.setup_game_loop(saved_game)
+
+        def on_enter(event):
+            event.widget.configure(fg="yellow", font=("Courier", 18, "bold"))
+        
+        def on_release(event):
+            event.widget.configure(fg="white", font=("Courier",15,"bold"))
+            
+        load_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
+
+        load_title = tk.Label(master=load_frame, text="Load Game", fg="white", background="black", font=("Courier", 40, "bold"))
+        load_title.place(x=3*WIDTH//4, y=HEIGHT//10, anchor="center")
+        menu_btn = tk.Label(master=load_frame, text="Main Menu", fg="white", font=("Courier", 20, "bold"), background="black") 
+        menu_btn.bind("<Button-1>", self.handle_menu_options)
+        menu_btn.bind("<Enter>", self.on_enter)
+        menu_btn.bind("<Leave>", self.on_leave)
+        menu_btn.place(x=3*WIDTH//4, y=HEIGHT-100, anchor="center")
+
+        with open("saved_games.txt","r") as saved_games:
+            games = saved_games.readlines()
+            original_y = 2*HEIGHT//7
+            for index,game in enumerate(games[-5::]):
+                game = game.split(";")
+                game_text = ast.literal_eval(game[0])
+                game_btn = tk.Label(master=load_frame, text=f"Level: {game_text[0]}, Date: {game_text[1]}", fg="white", font=("Courier", 15, "bold"), background="black")
+                game_btn.bind("<Button-1>", lambda event: game_loaded(game))
+                game_btn.bind("<Enter>", on_enter)
+                game_btn.bind("<Leave>", on_release )
+                game_btn.place(x=3*WIDTH//4, y=original_y+index*50, anchor="center")
+
+        load_label = tk.Label(master=load_frame, image=self.main_menu_image, background="black")
+        load_label.place(x=0, y=0)
+
+        return load_frame
 
     def start_game(self):
         self.current_frame = self.get_main_menu_frame()
         self.current_frame.pack()
 
         self.window.mainloop()
-
 
 game = GameManager()
 game.start_game()
