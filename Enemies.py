@@ -1,7 +1,13 @@
 import tkinter as tk
 import random
+from PIL import Image, ImageTk
 
 WIDTH, HEIGHT = 960, 540
+
+def rotate_image(image_dir, angle, is_below):
+    image = Image.open(image_dir)
+    rotated_image = ImageTk.PhotoImage(image.rotate(angle if not is_below else angle+180, expand=True))
+    return rotated_image
 
 class RatEnemy:
     def __init__(self, x, y, bunker_number, canvas):
@@ -256,3 +262,47 @@ class MoleEnemy:
         if self.attacking_frame %  self.attack_rate == 0:
             self.attacking_frame = 1
             return f"mole_attack_{self.direction}"
+
+class BladeTrap:
+    def __init__(self, x, y, canvas):
+        self.x = x
+        self.attacking_y = y - 30
+        self.y = y + 50
+        self.canvas = canvas
+        self.image = None
+
+        self.end_of_warning_frame = 30
+        self.current_frame = 1
+
+        self.end_of_attack_frame = 90
+
+        self.final_frame = 100
+
+        self.angle = 0
+        self.move_speed = 10
+
+    def __del__(self):
+        pass
+
+    def get_blade_image(self):
+        return rotate_image("Images/blade_trap.png", self.angle, False)
+
+    def update_enemy(self, player, player_movement):
+        self.x += player_movement
+        self.current_frame += 1
+
+        if self.current_frame <= self.end_of_warning_frame:
+            self.image = tk.PhotoImage(file="Images/exclamation.png")
+        elif self.current_frame > self.end_of_warning_frame and self.current_frame < self.end_of_attack_frame:
+            self.image = self.get_blade_image()
+            self.angle += 20
+            if self.y > self.attacking_y:
+                self.y -= self.move_speed
+        elif self.current_frame >= self.end_of_attack_frame and self.current_frame < self.final_frame:
+            self.image = self.get_blade_image()
+            self.angle += 20
+            self.y += self.move_speed
+        else:
+            return "remove"
+
+        self.canvas.create_image(self.x, self.y, image=self.image)

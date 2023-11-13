@@ -92,3 +92,9 @@ class OnHitEffect:
 			return -1
 		self.time_lived += 1
 		self.canvas.create_rectangle(self.x1, self.y1, self.x2, self.y2, stipple=self.stipple, fill=self.colour)
+
+class TrapWarningEffect:
+	def __init__(self, x, y, canvas):
+		self.x = x
+		self.y = y
+		self.canvas

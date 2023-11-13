@@ -52,8 +52,8 @@ class Bunker:
     def enemy_spawned(self):
         self.enemy_count += 1
 
-    def check_bunker_completed(self, enemies):
-        if self.enemy_count >= self.total_enemies and len(enemies) == 0:
+    def check_bunker_completed(self, current_enemy_count):
+        if self.enemy_count >= self.total_enemies and current_enemy_count == 0:
             return True
         return False
 
