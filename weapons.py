@@ -8,8 +8,55 @@ def rotate_image(image_dir, angle, is_below):
     rotated_image = ImageTk.PhotoImage(image.rotate(angle if not is_below else angle+180, expand=True))
     return rotated_image
 
+class PickaxeProjectile:
+    def __init__(self, x, y, sheight, direction, canvas):
+        self.x = x
+        self.y = y
+        self.canvas = canvas
+
+        self.sheight = sheight
+        self.damage = 15
+        self.angle = 0
+
+        self.hitbox_width = 25
+        self.hitbox_height = 35
+
+        self.image = tk.PhotoImage(file="Images/pickaxe_projectile.png")
+        self.direction = direction
+        if self.direction == "left":
+            self.velx, self.vely = -18, -25
+        else:
+            self.velx, self.vely = 18, -25
+
+        self.gravity = 2
+        self.rotation_speed = 20
+
+    def __del__(self):
+        pass
+
+    def get_image(self):
+        return rotate_image("Images/pickaxe_projectile.png", self.angle, False)
+
+    def update_projectile(self, player_movement):
+        self.x += self.velx + player_movement
+        self.y += self.vely
+        self.vely += self.gravity
+
+        if self.y >= 4*self.sheight//5 or self.y <= self.sheight//5:
+            return -1
+
+        if self.direction == "left":
+            self.angle += self.rotation_speed
+        else:
+            self.angle -= self.rotation_speed
+
+        if self.angle >= 360:
+            self.angle = 0
+        self.image = self.get_image()
+        self.canvas.create_image(self.x, self.y, image=self.image, anchor="s")
+
 class Bullet:
-    def __init__(self, x, y, velx, vely, canvas, swidth, sheight):
+    def __init__(self, x, y, velx, vely, damage, canvas, swidth, sheight):
         self.swidth, self.sheight = swidth, sheight
         self.x = x
         self.y = y
@@ -18,7 +65,7 @@ class Bullet:
         self.canvas = canvas
         self.image = tk.PhotoImage(file="Images/bullet.png")
 
-        self.damage = random.randint(12,18)
+        self.damage = damage
 
     def __del__(self):
         pass
@@ -27,7 +74,7 @@ class Bullet:
         self.x += self.velx + player_movement
         self.y += self.vely
 
-        if self.x > self.swidth or self.x < 0 or self.y > self.sheight-100 or self.y < 100:
+        if self.x > self.swidth or self.x < 0 or self.y > 4*self.sheight//5 or self.y < self.sheight//5:
             return -1
 
         self.canvas.create_image(self.x, self.y, image=self.image)
@@ -50,7 +97,6 @@ class Gun:
 
     def check_ammo(self):
         if self.remaining_ammo > 0:
-            self.remaining_ammo -= 1
             return True
         return False
     
@@ -58,7 +104,11 @@ class Gun:
         self.remaining_ammo = self.total_ammo
     
     def display_ammo(self, swidth, sheight):
-        self.canvas.create_text(swidth-100, sheight-30, text=f"{self.remaining_ammo}/{self.total_ammo}", justify="center", fill="white", font=("Courier", 20, "bold"))
+        if self.remaining_ammo == 0:
+            colour = "red"
+        else:
+            colour = "white"
+        self.canvas.create_text(swidth-100, sheight-30, text=f"{self.remaining_ammo}/{self.total_ammo}", justify="center", fill=colour, font=("Courier", 20, "bold"))
 
     def update_gun(self, player, pointerx, pointery):
         self.x = player.x

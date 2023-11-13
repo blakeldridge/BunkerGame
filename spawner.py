@@ -28,7 +28,9 @@ class Spawner:
     def spawn(self, remaining_enemies, bunker_number, swidth, sheight, canvas):
         enemy = None
         if self.spawn_tick >= self.spawn_rate and remaining_enemies > 0:
-            enemy = random.choice([Enemies.RatEnemy(random.choice([swidth+200, -200]), 4*sheight//5, bunker_number, canvas), Enemies.BatEnemy(random.choice([swidth+200, -200]), 4*sheight//5, bunker_number, canvas)])
+            enemy = random.choice([Enemies.RatEnemy(random.choice([swidth+200, -200]), 4*sheight//5, bunker_number, canvas), 
+                Enemies.BatEnemy(random.choice([swidth+200, -200]), 4*sheight//5, bunker_number, canvas),
+                Enemies.MoleEnemy(random.randint(0, swidth), 4*sheight//5, bunker_number, canvas, swidth)])
             self.spawn_tick = 0
 
         self.spawn_tick += 1

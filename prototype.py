@@ -25,15 +25,25 @@ class Player:
         self.x = WIDTH//2
         self.y = 4*HEIGHT//5 - 20
         self.dimensions = 15
-        self.current_image = tk.PhotoImage(file="Images/player_right.png")
+        self.current_image = tk.PhotoImage(file="Images/player_right_idle.png")
+        self.current_animation_frame = 1
+        self.frame_change = 1
         self.canvas = canvas
         self.image = self.canvas.create_image(self.x, self.y, image=self.current_image, anchor="s")
         self.direction = None
         self.velx = 0
 
+        self.hitbox_width = 60
+        self.hitbox_height = 150
+
         self.speed = 8
 
-        self.health = 1
+        self.shoot_frame = 1
+        self.shoot_available = True
+        self.damage_lower = 12
+        self.damage_upper = 18 
+
+        self.health = 100
         self.healthbar_value = tk.IntVar()
         style = ttk.Style()
         style.theme_use('clam') 
@@ -45,6 +55,9 @@ class Player:
 
     def get_save_info(self):
         return [self.health]
+
+    def get_damage(self):
+        return random.randint(self.damage_lower, self.damage_upper)
     
     def load_save_info(self, saved_info):
         self.health = saved_info[0]
@@ -57,7 +70,6 @@ class Player:
         elif char == bindings["Move Left"]:
             self.direction = "left"
             self.velx = -self.speed
-
         elif char == bindings["Reload"]:
             self.gun.reload()
 
@@ -66,19 +78,21 @@ class Player:
         if char == bindings["Move Right"] and self.direction == "right":
             self.direction = None
             self.velx = 0
+            self.current_animation_frame = 1
 
         elif char == bindings["Move Left"] and self.direction == "left":
             self.direction = None
             self.velx = 0
+            self.current_animation_frame = 1
 
     def get_bullet_args(self):
         angle = math.radians(self.gun.angle)
         bullet_velx = BULLET_SPEED * math.sin(angle)
         bullet_vely = BULLET_SPEED * math.cos(angle)
         if self.gun.aiming_up:
-            return self.x, self.gun.y, bullet_velx, bullet_vely
+            return self.x, self.gun.y, bullet_velx, bullet_vely, self.shoot_available
         else:
-            return self.x, self.gun.y, -bullet_velx, -bullet_vely
+            return self.x, self.gun.y, -bullet_velx, -bullet_vely, self.shoot_available
         
     def take_damage(self, damage):
         self.health -= damage
@@ -94,13 +108,54 @@ class Player:
     def update_healthbar(self):
         self.healthbar_value.set(self.health)
 
-    def update_player(self, pointerx, pointery):
-        if pointerx > self.x:
-            self.current_image = tk.PhotoImage(file="Images/player_right.png")
+    def taken_shot(self):
+        self.shoot_available = False
+        self.gun.remaining_ammo -= 1
+
+    def move(self, edge_status):
+        if edge_status == "right":
+            if self.x < WIDTH-100:
+                self.x += self.speed
         else:
-            self.current_image = tk.PhotoImage(file="Images/player_left.png")
+            if self.x > 100:
+                self.x -= self.speed
+
+    def get_current_image(self, pointer_dir):
+        if self.direction == "right" or self.direction == "left":
+            current_image = tk.PhotoImage(file=f"Images/player_{pointer_dir}_walking/frame_{self.current_animation_frame}.png")
+            if self.direction == "right" and pointer_dir == "left" or self.direction == "left" and pointer_dir == "right":
+                if self.frame_change % 4 == 0:
+                    if self.current_animation_frame <= 1:                
+                        self.current_animation_frame = 8
+                    else:
+                        self.current_animation_frame -= 1
+                    self.frame_change = 1
+
+            else:
+                if self.frame_change % 4 == 0:
+                    if self.current_animation_frame >= 8:                
+                        self.current_animation_frame = 1
+                    else:
+                        self.current_animation_frame += 1
+                    self.frame_change = 1
+        else:
+            current_image = tk.PhotoImage(file=f"Images/player_{pointer_dir}_idle.png")
+
+        return current_image
+
+    def update_player(self, pointerx, pointery):
+        self.frame_change += 1
+        if pointerx > self.x:
+            self.current_image = self.get_current_image("right")
+        else:
+            self.current_image = self.get_current_image("left")
 
         self.canvas.create_image(self.x, self.y, image=self.current_image, anchor="s")
+        if not self.shoot_available:
+            self.shoot_frame += 1
+            if self.shoot_frame % 10 == 0:
+                self.shoot_available = True
+                self.shoot_frame = 1
 
         self.gun.update_gun(self, pointerx, pointery)
 
@@ -144,14 +199,20 @@ class GameManager:
         self.player.key_pressed(event)
         if event.char == bindings["Interact"] and self.current_bunker.check_bunker_completed(self.enemies) and not self.fading_animation_active:
             self.fading_animation_active = True
+        elif event.char == bindings["Cheats"]:
+            self.player.speed = 20
+            self.player.damage_lower = 100
+            self.player.damage_upper = 100
 
     def on_key_released(self, event):
         self.player.key_released(event)
 
     def on_mouse_pressed(self, event):
-        if self.player.gun.check_ammo():
-            bullet_x, bullet_y, bullet_vel_x, bullet_vel_y = self.player.get_bullet_args()
-            self.bullets.append(weapons.Bullet(bullet_x, bullet_y, bullet_vel_x, bullet_vel_y, self.canvas, WIDTH, HEIGHT))
+        self.shooting = True
+
+    def on_mouse_released(self, event):
+        self.shooting = False
+        self.prev_hint_frame = 0
 
     def on_escape_key_pressed(self, event):
         self.state = "pause"
@@ -167,10 +228,15 @@ class GameManager:
         self.canvas.create_rectangle(0, HEIGHT//5, WIDTH, 4*HEIGHT//5, fill="#497325")
         player_movement = -self.player. get_player_movement()
         edge_status = self.current_bunker.check_at_edge(WIDTH)
-        if edge_status == "right" and player_movement < 0:
+        if edge_status == "right" and player_movement < 0 or edge_status == "left" and player_movement > 0:
             player_movement = 0
-        elif edge_status == "left" and player_movement > 0:
+            self.player.move(edge_status)
+        elif edge_status == "right" and player_movement > 0 and self.player.x > WIDTH//2:
             player_movement = 0
+            self.player.move("left")
+        elif edge_status == "left" and player_movement < 0 and self.player.x < WIDTH//2:
+            player_movement = 0
+            self.player.move("right")
             
         self.current_bunker.camera_move_foreground(player_movement)
         pointerx = self.window.winfo_pointerx() - self.window.winfo_rootx()
@@ -188,7 +254,8 @@ class GameManager:
             else:
                 for enemy in reversed(self.enemies):                    
                     if check_collision(bullet, enemy):
-                        self.effects.append(effects.DamagePopUp(enemy.x, enemy.y-enemy.hitbox_height, str(bullet.damage), self.DAMAGE_FONT, self.canvas))
+                        self.effects.append(effects.TextPopUp(enemy.x, enemy.y-enemy.hitbox_height, str(bullet.damage), "red", 5, self.DAMAGE_FONT, self.canvas))
+                        self.effects.append(effects.BloodEffect(bullet.x, bullet.y, self.canvas))
 
                         if enemy.take_damage(bullet.damage) == -1:
                             self.enemies.remove(enemy)
@@ -200,9 +267,37 @@ class GameManager:
                         break
 
         for enemy in reversed(self.enemies):
-            enemy.update_enemy(self.player, player_movement)
+            update_status = enemy.update_enemy(self.player, player_movement)
+            if update_status == "hit_player":
+                self.effects.append(effects.OnHitEffect(WIDTH, HEIGHT, self.canvas))
+            elif update_status != None and "mole_attack" in update_status:
+                self.enemy_projectiles.append(weapons.PickaxeProjectile(enemy.x, enemy.y, HEIGHT, "right" if "right" in update_status else "left", self.canvas))
+
+        for projectile in reversed(self.enemy_projectiles):
+            if projectile.update_projectile(player_movement) == -1:
+                self.enemy_projectiles.remove(projectile)
+                del projectile
+            elif check_collision(projectile, self.player):
+                self.player.take_damage(projectile.damage)
+                self.enemy_projectiles.remove(projectile)
+                del projectile
+
+                self.effects.append(effects.OnHitEffect(WIDTH, HEIGHT, self.canvas))
+
 
         self.player.update_player(pointerx, pointery)
+        if self.shooting:
+            if self.player.gun.check_ammo():
+                bullet_x, bullet_y, bullet_vel_x, bullet_vel_y, is_shoot = self.player.get_bullet_args()
+                if is_shoot:
+                    self.bullets.append(weapons.Bullet(bullet_x, bullet_y, bullet_vel_x, bullet_vel_y, self.player.get_damage(), self.canvas, WIDTH, HEIGHT))
+                    self.player.taken_shot()
+            else:
+                if self.prev_hint_frame % 15 == 0:
+                    self.effects.append(effects.TextPopUp(WIDTH//2, HEIGHT//2-25, "out of ammo!", "white", 10, ("Courier", 15, "bold"), self.canvas))
+                    self.prev_hint_frame = 1
+                else:
+                    self.prev_hint_frame += 1
 
         self.current_bunker.draw_foreground()
 
@@ -250,6 +345,8 @@ class GameManager:
         self.canvas = tk.Canvas(width=WIDTH, height=HEIGHT, background="black")
 
         self.player = Player(self.canvas)
+        self.shooting = False
+        self.prev_hint_frame = 1
         self.spawner = Spawner()
 
         self.bunker_count = 1
@@ -261,12 +358,14 @@ class GameManager:
         self.current_bunker = bunker.Bunker(self.bunker_count, self.canvas, HEIGHT)
         self.bullets = []
         self.enemies = []
+        self.enemy_projectiles = []
         self.effects = [effects.BunkerLevelText(self.bunker_count, WIDTH, HEIGHT, self.canvas)]
 
         self.score = 0
         self.canvas.bind("<KeyPress>", self.on_key_pressed)
         self.canvas.bind("<KeyRelease>", self.on_key_released)
         self.canvas.bind("<ButtonPress-1>", self.on_mouse_pressed)
+        self.canvas.bind("<ButtonRelease-1>", self.on_mouse_released)
         self.canvas.bind("<Escape>", self.on_escape_key_pressed)
         self.canvas.focus_set()
         self.canvas.pack()
@@ -302,7 +401,7 @@ class GameManager:
             self.current_frame.pack()
         elif option == "Exit":
             self.window.destroy()
-        elif option == "Main Menu" or option == "<--":
+        elif option == "Main Menu":
             self.current_frame.destroy()
             self.current_frame = self.get_main_menu_frame()
             self.current_frame.pack()
@@ -488,61 +587,49 @@ class GameManager:
         return load_frame
     
     def get_options_frame(self):
-        options_background_colour = "#777777"
+        def check_entry(event):
+            text = event.widget.get()
+            if len(text) >= 1:
+                event.widget.delete(0, tk.END)
+                event.widget.insert(0, text[0].upper())
+
+        def exit_options(event):
+            for index, entry in enumerate(control_entries):
+                bindings[control_names[index]] = entry.get().lower()
+
+            self.handle_menu_options(event)
+
         options_frame = tk.Frame(width=WIDTH, height=HEIGHT, background="black")
         options_title = tk.Label(master=options_frame, text="Options", fg="white", background="black", font=("Courier", 30, "bold"))
-        options_title.place(x=WIDTH//2, y=50, anchor="center")
+        options_title.place(x=3*WIDTH//4, y=HEIGHT//7, anchor="center")
 
-        controls_frame = tk.Frame(master=options_frame, width=WIDTH-50, height=HEIGHT-150, background=options_background_colour)
         control_names = list(bindings.keys())
         control_bindings = list(bindings.values())
+        control_entries = []
+        original_y = 2*HEIGHT//7
         for i in range(len(bindings)):
-            if i > 3:
-                row = i - 4
-                label_column = 2
-                binding_column = 3
-            else:
-                row = i
-                label_column = 0
-                binding_column = 1
-            control_name_label = tk.Label(master=controls_frame, text=f"{control_names[i]}:", fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
-            control_label = tk.Label(master=controls_frame, text=control_bindings[i].upper(), fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
-            control_name_label.grid(row=row, column=label_column, padx=30, pady=25, sticky="W")
-            control_label.grid(row=row, column=binding_column,padx=30, pady=25)
+            control_name_label = tk.Label(master=options_frame, text=f"{control_names[i]}:", fg="white", background="black", font=("Courier", 15, "bold"))
+            control_label = tk.Entry(master=options_frame, font=("Courier", 15, "bold"), width=3)
+            control_label.insert(tk.END, control_bindings[i].upper())
+            control_label.bind("<KeyRelease>", check_entry)
+            control_name_label.place(x=3*WIDTH//4-50, y=original_y+i*40, anchor="center")
+            control_label.place(x=3*WIDTH//4+80, y=original_y+i*40, anchor="center")
+            control_entries.append(control_label)
 
-        # to be sound part of options menu (requires external module)
-        """sounds_frame = tk.Frame(master=options_frame, width=WIDTH//2, height=HEIGHT, background=options_background_colour)
-        music_label = tk.Label(master=sounds_frame, text="Music:", fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
-        music_toggle_btn = tk.Button(master=sounds_frame, text="On")
-
-        sound_effects_label = tk.Label(master=sounds_frame, text="Sound Effects:", fg="white", background=options_background_colour, font=("Courier", 30, "bold"))
-        sound_effects_toggle_btn = tk.Button(master=sounds_frame, text="On")
-
-        volume_label = tk.Label(master=sounds_frame, text="Volume:", fg="white", background=options_background_colour, font=("Courier",30,"bold"))
-        volume_slider = tk.Scale(master=sounds_frame, from_=0, to=100, orient=tk.HORIZONTAL)
-
-        music_label.grid(row=0, column=0, padx=20, pady=30, sticky="W")
-        music_toggle_btn.grid(row=0, column=1, padx=10, pady=30)
-        sound_effects_label.grid(row=1, column=0, padx=20, pady=30, sticky="W")
-        sound_effects_toggle_btn.grid(row=1, column=1, padx=20, pady=30)
-        volume_label.grid(row=2, column=0, padx=20, pady=30, sticky="W")
-        volume_slider.grid(row=3, column=0, padx=10, pady=30)"""
-
-        controls_frame.place(x=WIDTH//2, y=HEIGHT//2, anchor="center", rely=0.1)
-        # sounds_frame.grid(row=1, column=1, padx=25, pady=20)
-
-        return_btn = tk.Label(master=options_frame, text="<--", fg="white", background="black",font=("Courier",20,"bold"))
-        return_btn.bind("<Button-1>", self.handle_menu_options)
+        return_btn = tk.Label(master=options_frame, text="Main Menu", fg="white", background="black",font=("Courier",20,"bold"))
+        return_btn.bind("<Button-1>", exit_options)
         return_btn.bind("<Enter>", self.on_enter)
         return_btn.bind("<Leave>", self.on_leave)
-        return_btn.place(x=50, y=50, anchor="center")
+        return_btn.place(x=3*WIDTH//4, y=6*HEIGHT//7, anchor="center")
+
+        options_image_label = tk.Label(master=options_frame, image=self.main_menu_image, background="black")
+        options_image_label.place(x=0, y=0)
 
         return options_frame
 
     def start_game(self):
         self.current_frame = self.get_main_menu_frame()
         self.current_frame.pack()
-
         self.window.mainloop()
 
 game = GameManager()
