@@ -30,7 +30,7 @@ class Spawner:
         self.normal_spawn_rate = saved_info[0]
 
     # called when the player mvoes to the next bunker level
-    def bunker_reset(self, s_crazy_bunker):
+    def bunker_reset(self, is_crazy_bunker):
         # increase the spawn rate if the bunker is "crazy"
         if is_crazy_bunker:
             self.normal_spawn_rate = self.spawn_rate

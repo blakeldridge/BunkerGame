@@ -6,9 +6,10 @@ import menu_manager
 # also handles when the game is started
 class Handler:
 	def __init__(self):
-		self.swidth, self.sheight = 960, 540
+		self.swidth, self.sheight = 1280, 720
 
 		self.window = tk.Tk()
+		self.window.bind("<Key>", self.check_boss_key)
 		self.window.title("Nuclear Whiskers")
 		self.window.geometry(f"{self.swidth}x{self.sheight}")
 
@@ -65,6 +66,12 @@ class Handler:
 		elif state == "load_game":
 			self.state = "game"
 			self.game.setup_game_loop(self.menu.get_loaded_game())
+
+	# minimise application if boss button is pressed
+	def check_boss_key(self, event):
+		if event.char == self.bindings["Boss Button"] and self.state != "menu":
+			self.game.on_escape_key_pressed(None)
+			self.window.iconify()
 
 	# function called to load the application
 	def loop(self):

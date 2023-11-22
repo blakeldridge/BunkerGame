@@ -27,13 +27,6 @@ class GameManager:
 
     def get_score(self):
         return self.score
-
-    # minimises the application if the boss button is activated
-    def activate_boss_button(self, event):
-        if event.char == bindings["Boss Button"]:
-            if self.state == "game":
-                self.on_escape_key_pressed(None)
-            self.handler.get_window().iconify()
     
     # sets the bunker back to its original state, for when player moves to next level
     def reset_bunker(self):

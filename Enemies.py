@@ -21,7 +21,7 @@ class RatEnemy:
         self.health = random.randint(lower, upper)
 
         self.velx = 0
-        self.speed = 3
+        self.speed = 5
 
         self.attack_ready = False
         self.attacking = 0
@@ -132,7 +132,7 @@ class BatEnemy:
         self.health = random.randint(lower, upper)
 
         self.velx = 0
-        self.speed = 3
+        self.speed = 6
         self.bob_speed = 1
         self.bob_dir = 1
 

@@ -84,8 +84,8 @@ class Player:
         self.hitbox_width = 60
         self.hitbox_height = 150
 
-        self.speed = 8
-        self.bullet_speed = 25
+        self.speed = 10
+        self.bullet_speed = 50
 
         self.shoot_frame = 100
         self.shoot_available = True
@@ -108,7 +108,7 @@ class Player:
         self.inventory = Inventory(self, self.canvas)
 
     def get_save_info(self):
-        return [self.health]
+        return [self.health, self.inventory.weapon.remaining_ammo, self.inventory.ammo, self.inventory.bandages]
 
     def get_damage(self):
         return random.randint(self.damage_lower, self.damage_upper)
@@ -127,6 +127,9 @@ class Player:
     
     def load_save_info(self, saved_info):
         self.health = saved_info[0]
+        self.inventory.weapon.remaining_ammo = saved_info[1]
+        self.inventory.ammo = saved_info[2]
+        self.inventory.bandages = saved_info[3]
 
     # check for all keys pressed
     def key_pressed(self, event, bindings):
@@ -151,7 +154,7 @@ class Player:
             #starts melee attack
             self.melee_attack = True
             self.velx = 0
-            self.current_animation_frame = 3
+            self.current_animation_frame = 6
             self.frame_change = 1
 
     # when key is released handle movement so that player stops

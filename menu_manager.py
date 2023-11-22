@@ -134,14 +134,13 @@ class MenuManager:
 	# creates all the tkinter objects for the game over menu
 	def get_game_over_frame(self):
 		# function called for when the player writes and saves their name (to save their score)
-		def entered_name(event):
+		def entered_name():
 			# gets widgetk and the name entered into the widget
-			widget = event.widget
-			name = widget.get()
+			name = save_score_entry.get()
+			save_score_entry.config(state="disabled")
 			# saves the score in the leaderboard file
 			self.save_score(name)
 			# indicates to the player that the score has been saved
-			widget.destroy()
 			saved_score_label.place(x=3*self.handler.get_swidth()//4, y=4*self.handler.get_sheight()//7, anchor="center")
 
 		# creates the container for all the game over objects
@@ -166,7 +165,7 @@ class MenuManager:
 
 		# create a label below with the final score of the player
 		score_label = tk.Label(master=game_over_frame, text=f"Final Score: {self.handler.get_current_game_score()}", fg="white", background="black", font=("Courier", 20, "bold"))
-		score_label.place(x=3*self.handler.get_swidth()//4, y=3*self.handler.get_sheight()//7, anchor="center")
+		score_label.place(x=3*self.handler.get_swidth()//4, y=2*self.handler.get_sheight()//7, anchor="center")
 
 		# draw the game over image to the screen
 		# same as main menu one for now
@@ -176,8 +175,11 @@ class MenuManager:
 		# create an entry box for the player to enter their name at the end of the game
 		# bind when player presses enter in order to save score
 		save_score_entry = tk.Entry(master=game_over_frame, font=("Courier", 18, "bold"))
-		save_score_entry.bind("<Return>", entered_name)
-		save_score_entry.place(x=3*self.handler.get_swidth()//4, y=4*self.handler.get_sheight()//7, anchor="center")
+		#save_score_entry.bind("<Return>", entered_name)
+		save_score_entry.place(x=3*self.handler.get_swidth()//4, y=3*self.handler.get_sheight()//7, anchor="center")
+
+		save_score_button = tk.Button(master=game_over_frame, text="Save", command=entered_name, font=("Courier", 18, "bold"))
+		save_score_button.place(x=6*self.handler.get_swidth()//7, y=3*self.handler.get_sheight()//7 + 30)
 
 		# label that indicates score was saved
 		saved_score_label = tk.Label(master=game_over_frame, text="Score Saved!", font=("Courier", 18, "bold"), fg="yellow", background="black")

@@ -112,7 +112,7 @@ class Bunker:
         self.enemy_count = 0
         self.bunker_complete = False
 
-        self.bunker_width = random.randint(1, 4)
+        self.bunker_width = random.randint(2, 4)
         self.foreground_dimensions = [500, sheight*3//5]
         self.background_dimensions = [1000, 300]
 
