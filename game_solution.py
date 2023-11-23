@@ -1,3 +1,5 @@
+## runs in 1280x720
+
 import tkinter as tk
 import game_manager
 import menu_manager
