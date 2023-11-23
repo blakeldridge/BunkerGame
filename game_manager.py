@@ -285,7 +285,7 @@ class GameManager:
 
     # get all the save informatino as a string when saving and exiting the game
     def get_save_info(self):
-        return f"{self.bunker_count, datetime.now().strftime("%d/%m/%Y")};{[self.bunker_count, self.score]};{self.spawner.get_save_info()};{self.player.get_save_info()}"
+        return f"{self.bunker_count, datetime.now().strftime('%d/%m/%Y')};{[self.bunker_count, self.score]};{self.spawner.get_save_info()};{self.player.get_save_info()}"
     
     # load saved inforamtion for this class
     def load_saved_info(self, saved_info):

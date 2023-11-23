@@ -30,7 +30,7 @@ class MenuManager:
 		# gets the current score of the game, the name of the player and the time player
 		# writes it to the leaderboard file
 		with open("leaderboard.txt","a") as leaderboard:
-			leaderboard.write(f"{player_name},{self.handler.get_current_game_score()},{datetime.now().strftime("%d/%m/%Y")}\n")
+			leaderboard.write(f"{player_name},{self.handler.get_current_game_score()},{datetime.now().strftime('%d/%m/%Y')}\n")
 			leaderboard.close()
 
 	# funciton called whenever the mouse hovers over a menu select label

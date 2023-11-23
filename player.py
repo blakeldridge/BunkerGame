@@ -159,7 +159,7 @@ class Player:
 
     # when key is released handle movement so that player stops
     def key_released(self, event, bindings):
-        char = event.char
+        char = event.keysym
         # if player was moving right and right is released
         if char == bindings["Move Right"] and self.direction == "right":
             # stop movement
@@ -172,6 +172,9 @@ class Player:
             self.direction = None
             self.velx = 0
             self.current_animation_frame = 1
+        # give infinite ammo if user presses cheats button
+        elif char == bindings["Cheats"]:
+            self.inventory.ammo = 1000
 
     # get arguements for when shooting bullets (based on the angle that the gun is facing)
     def get_bullet_args(self):
