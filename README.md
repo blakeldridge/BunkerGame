@@ -44,7 +44,7 @@ cd BunkerGame
     python game_solution.py
 ```
 
-🎮 How To Play
+## 🎮 How To Play
 - Move Left (A) & Right (D)
 - Aim with Mouse, Shoot with Left Click
 - Kill all enemies to descend levels
