@@ -1,53 +1,67 @@
-# Nuclear Whiskers - A Post Apocalyptic Survival Platformer
+# ☢️🐱 Nuclear Whiskers  
 
-An exciting survival platformer based in a post-apocalyptic setting, raiding bunkers for supplies. But that is not all that is down there...
+An **exciting survival platformer** set in a **post-apocalyptic world**, where you raid bunkers for supplies. But be careful... you're not alone down there.  
 
-This game was a first year university project as part of an Introduction to Programming coursework. It was built in Python using Tkinter.
+🕹️ **Survive. Explore. Fight.** How deep can you go before it's too late?  
 
-## Demo
-![Nuclear Whiskers Gameplay](ReadMeImages/demo1.gif)
-![Main Menu Navigation](ReadMeImages/demo2.gif)
+This game was created as a **first-year university project** for an **Introduction to Programming** coursework. It was built in **Python** using **Tkinter**.  
 
-## Features
-- Descend further down the levels of the bunkers after defeating all enemies!
-- Preserve your ammo and your health, its only limited...
-- Handmade pixel art animations!
-- Save your high scores to a local leaderboard, see which of your friends can get the highest score!
-- Pause and Save your current game, and come back to it later!
-- Customisable Controls
+---
 
-## Installation
-1. Clone the repository:
+## 🎥 Demo  
+**Gameplay Preview:**  
+![Nuclear Whiskers Gameplay](ReadMeImages/demo1.gif)  
+
+**Main Menu Navigation:**  
+![Main Menu Navigation](ReadMeImages/demo2.gif)  
+
+---
+
+## 🏆 Features  
+- ⚔️ **Fight off enemies** and descend further into the bunker!  
+- 🔫 **Manage your ammo and health** wisely – resources are limited...  
+- 🎨 **Handmade pixel art animations** for a retro feel!  
+- 📜 **Save your high scores** and compete with friends!  
+- ⏸️ **Pause & Save your game** and continue later!  
+- 🎮 **Customizable controls** for a tailored experience!  
+
+---
+
+## 🚀 Installation  
+1️⃣ Clone the repository:  
 ```sh
-    git clone https://github.com/blakeldridge/BunkerGame.git
-    cd BunkerGame
+git clone https://github.com/blakeldridge/BunkerGame.git
+cd BunkerGame
 ```
 
-2. Install Dependencies
+2️⃣ Install Dependencies:
 ```sh
     pip install tkinter pillow
 ```
 
-3. Run the Game
+3️⃣ Run the Game:
 ```sh
     python game_solution.py
 ```
 
-## How To Play
-- Move your player left (A) and right (D)
-- Shoot by aiming with your mouse
+🎮 How To Play
+- Move Left (A) & Right (D)
+- Aim with Mouse, Shoot with Left Click
 - Kill all enemies to descend levels
-- Pick up supplies to use (Bandages : 2, Reload : R)
-- Score as high as you can before dying
+- Pick up Supplies:
+    - 🩹 Bandages → Heal (Press 2)
+    - 🔄 Reload → Refill ammo (Press R)
+- Score as high as possible before you die!
 
-![Controls](ReadMeImages/controls.png)
+**Controls Layout:**
+<img src="ReadMeImages/controls.png" width="450">
 
-## Technologies Used
-- Python
-- Tkinter (GUI framework)
-- PIL (Image manipulation)
+## 🔧 Technologies Used
+- 🐍 Python
+- 🖼️ Tkinter (GUI framework)
+- 🖌️ PIL (Image manipulation)
 
-## Contact
-Created by **[Blake Eldridge](https://github.com/blakeldridge)** - Feel free to reach out!
-Email : blakeldridge@gmail.com
-LinkedIn : [blakeldridge](https://www.linkedin.com/in/blake-eldridge/)
+## 📬 Contact
+Created by **[Blake Eldridge](https://github.com/blakeldridge)** - Feel free to reach out! <br>
+📧 **Email** : blakeldridge@gmail.com <br>
+💼 **LinkedIn** : [blakeldridge](https://www.linkedin.com/in/blake-eldridge/)
