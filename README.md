@@ -54,7 +54,7 @@ cd BunkerGame
 - Score as high as possible before you die!
 
 **Controls Layout:**
-<img src="ReadMeImages/controls.png" width="450">
+<img src="ReadMeImages/controls.png" height="100px">
 
 ## 🔧 Technologies Used
 - 🐍 Python
